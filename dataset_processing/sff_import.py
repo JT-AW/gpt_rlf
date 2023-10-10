@@ -5,16 +5,20 @@ import logging
 import argparse
 
 
+# Configure the logging format and set the level to INFO
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+
 def build_sff():
     """
     Builds and returns the dataset builder for sff
     """
     ds_builder = load_dataset_builder("openai/summarize_from_feedback", "comparisons")
-    logging.warning("Building dataset...")
+    logging.info("Building dataset...\n")
     ds = ds_builder.download_and_prepare()
-    logging.warning("Done building dataset...")
-    logging.warning(ds_builder.info.description)
-    logging.warning(ds_builder.info.features)
+    logging.info("Done building dataset...\n")
+    logging.info(f'Dataset description: {ds_builder.info.description}\n')
+    logging.info(f'Dataset features: {ds_builder.info.features}\n')
     return ds
 
 
@@ -37,7 +41,7 @@ def load_sff(sample=True, train=True) -> pd.DataFrame:
                           split='validation')
 
     df = ds.to_pandas()
-    logging.warning('Dataset shape:', df.shape)
+    logging.info(f'Dataset shape: {df.shape}\n')
 
     # Data cleaning: dropping unnecessary rows, parsing reddit post column
     df = df.drop(["batch", "split", "extra", "worker"], axis="columns")
@@ -71,11 +75,14 @@ def export_to_json(questions, labels, keep_labels):
         for item in questions.to_dict('records'):
             json_line = json.dumps(item)
             file.write(json_line + '\n')
+    
+    logging.info("questions.jsonl exported\n")
     if keep_labels:
         with open("sff_labels.jsonl", "w") as file:
             for item in labels.to_dict('records'):
                 json_line = json.dumps(item)
                 file.write(json_line + '\n')
+            logging.info("labels.jsonl exported")
 
 
 if __name__ == '__main__':
@@ -94,6 +101,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    build_sff
+    build_sff()
     questions, labels = load_sff(args.sample, args.train)
     export_to_json(questions, labels, args.keep_labels)
