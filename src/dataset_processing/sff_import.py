@@ -78,7 +78,7 @@ def export_to_json(questions, labels, keep_labels):
     
     logging.info("questions.jsonl exported\n")
     if keep_labels:
-        with open("sff_labels.jsonl", "w") as file:
+        with open("sff_human_labels.jsonl", "w") as file:
             for item in labels.to_dict('records'):
                 json_line = json.dumps(item)
                 file.write(json_line + '\n')
