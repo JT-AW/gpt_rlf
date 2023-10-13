@@ -60,19 +60,38 @@ def load_sff(sample=True, train=True) -> pd.DataFrame:
     # aggregating columns into the 'turns' (questions) column
     df['turns'] = df['subreddit'] + " " + df['title'] + " " + df['post']
 
-    # selecting only needed columns
+    # QUESTIONS: selecting only needed columns
     questions = df[['question_id', 'category', 'turns']].copy()
     questions['turns'] = 'Given the context of the specified subreddit and title, summarize the post. ' + questions['turns']
     questions['turns'] = questions['turns'].apply(lambda x: [x])
 
+    # ANSWERS: selecting model answers
+    answers = df[['question_id', 'summaries']]
+    answers['model0'] = df['summaries'].str[0].str['text']
+    answers['model1'] = df['summaries'].str[1].str['text']
+
+    model0 = answers[['question_id', 'model0']].rename(columns={'model0':'answer'})
+    model1 = answers[['question_id', 'model1']].rename(columns={'model1':'answer'})
+
+    # LABELS
     labels = df['choice'].copy()
 
-    return questions, labels
+    return questions, model0, model1, labels
 
 
-def export_to_json(questions, labels, keep_labels):
+def export_to_json(questions, model0, model1, labels, keep_labels):
     with open("sff_questions.jsonl", "w") as file:
         for item in questions.to_dict('records'):
+            json_line = json.dumps(item)
+            file.write(json_line + '\n')
+
+    with open("sff_model0.jsonl", "w") as file:
+        for item in model0.to_dict('records'):
+            json_line = json.dumps(item)
+            file.write(json_line + '\n')
+
+    with open("sff_model1.jsonl", "w") as file:
+        for item in model1.to_dict('records'):
             json_line = json.dumps(item)
             file.write(json_line + '\n')
     
@@ -102,5 +121,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     build_sff()
-    questions, labels = load_sff(args.sample, args.train)
-    export_to_json(questions, labels, args.keep_labels)
+    questions, model0_answers, model1_answers, labels = load_sff(args.sample, args.train)
+    export_to_json(questions, model0_answers, model1_answers, labels, args.keep_labels)
