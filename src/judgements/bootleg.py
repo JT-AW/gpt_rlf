@@ -2,13 +2,18 @@
 Extracted from FastChat/fastchat/llm_judge/common.py
 """
 import ast
-import dataclasses
 import glob
 import json
 import os
 import re
 import time
 from typing import Optional
+
+import argparse
+import json
+
+import numpy as np
+from tqdm import tqdm
 
 import openai
 import anthropic
@@ -258,3 +263,35 @@ def chat_compeletion_anthropic(model, conv, temperature, max_tokens):
             print(type(e), e)
             time.sleep(API_RETRY_SLEEP)
     return output.strip()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--bench-name",
+        type=str,
+        default="sff",
+        help="The name of the benchmark question set.",
+    )
+    parser.add_argument(
+        "--judge-file",
+        type=str,
+        default="data/judge_prompts.jsonl",
+        help="The file of judge prompts.",
+    )
+    args = parser.parse_args()
+    
+    # Load in all the files
+    question_file = f"data/{args.bench_name}/question.jsonl"
+    answer_dir = f"data/{args.bench_name}/model_answer"
+    ref_answer_dir = f"data/{args.bench_name}/reference_answer"
+
+    # Load questions
+    questions = load_questions(question_file, None, None)
+
+    # Load answers
+    model_answers = load_model_answers(answer_dir)
+    ref_answers = load_model_answers(ref_answer_dir)
+
+    # Load judge
+    judge_prompts = load_judge_prompts(args.judge_file)
